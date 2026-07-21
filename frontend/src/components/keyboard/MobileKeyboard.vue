@@ -564,9 +564,6 @@ function onSwipeEnd() {
   swipeTransition.value = true
   if (swipeDeltaX.value < -threshold && kbMode.value === 'default') {
     kbMode.value = 'action'
-  } else if (swipeDeltaX.value > threshold && kbMode.value === 'action') {
-    kbMode.value = 'default'
-    fetchSuggestions()
   }
   swipeDeltaX.value = 0
   swiping.value = false
@@ -673,20 +670,15 @@ const row5bottom = computed<KeyDef[]>(() => [
   { l: cnMode.value ? '英' : '中', sp: 'cn', g: 1.3, cls: 'mkb-mod', id: 'mkb-cn' },
 ])
 
-const kbswitchAction = computed<KeyDef>(() => ({
-  l: '',
-  icon: Keyboard,
-  sp: 'kbswitch',
-  g: 1.2,
-  cls: 'mkb-mod mkb-action-back',
-  id: 'mkb-kbswitch2',
-}))
+// The built-in QWERTY page is retired: typing goes through the system
+// keyboard (better feel/IME), and the mkb keeps only the action rows.
+// kbMode stays 'action'; the QWERTY code is kept but unreachable.
 
 const actionFirstRow = computed(() => {
   const cfg = settings.action_keyboard ?? DEFAULT_ACTION_KEYBOARD
   const rows = cfg.rows?.length ? cfg.rows : DEFAULT_ACTION_KEYBOARD.rows
   const first = rows[0] ?? []
-  return [kbswitchAction.value, ...mapActionKeys(first, false)]
+  return mapActionKeys(first, false)
 })
 
 const actionFollowingRows = computed(() => {
