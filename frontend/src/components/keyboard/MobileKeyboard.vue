@@ -379,6 +379,18 @@ const kbMode = ref<'default' | 'action'>('action')
 const inputBuffer = ref('')
 let blurTimer: ReturnType<typeof setTimeout> | null = null
 
+// Auto-focus the text input when the keyboard opens in action mode, so the
+// system IME (with its 中/英 switching) rises together with the virtual
+// keyboard instead of requiring a second tap on the input bar.
+watch(
+  () => props.visible,
+  (v) => {
+    if (v && kbMode.value === 'action') {
+      nextTick(() => textInputRef.value?.focus())
+    }
+  }
+)
+
 interface TextareaMetrics {
   padTop: number
   padBottom: number
