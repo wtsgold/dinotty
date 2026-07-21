@@ -40,7 +40,9 @@ export function ensureDictLoaded(): Promise<void> {
   if (!loadPromise) {
     loadPromise = (async () => {
       try {
-        const res = await fetch('/pinyin-dict.json')
+        // Served via the /assets/* wildcard route — the embedded server only
+        // whitelists specific top-level paths, so the dict must live in assets.
+        const res = await fetch('/assets/pinyin-dict.json')
         if (!res.ok) return
         dict = (await res.json()) as PinyinDict
         sortedKeys = Object.keys(dict).sort()

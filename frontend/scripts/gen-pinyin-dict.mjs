@@ -34,7 +34,7 @@ const CHAR_LIMIT = 7000
 const WORD_LIMIT = 60000
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const outFile = path.join(scriptDir, '..', 'public', 'pinyin-dict.json')
+const outFile = path.join(scriptDir, '..', 'public', 'assets', 'pinyin-dict.json')
 const cacheFile = path.join(tmpdir(), 'dinotty-pinyin-dict', 'rawdict_utf16_65105_freq.txt')
 
 async function downloadRawDict() {

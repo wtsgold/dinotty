@@ -55,7 +55,7 @@ describe('ensureDictLoaded', () => {
     expect(ime.isDictReady()).toBe(false)
     await ime.ensureDictLoaded()
     expect(ime.isDictReady()).toBe(true)
-    expect(fetchMock).toHaveBeenCalledWith('/pinyin-dict.json')
+    expect(fetchMock).toHaveBeenCalledWith('/assets/pinyin-dict.json')
   })
 
   it('is idempotent: repeated calls fetch only once', async () => {
