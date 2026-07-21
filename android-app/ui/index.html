@@ -86,7 +86,9 @@
       try {
         const u = new URL(url)
         if (!u.port && u.protocol === 'http:') u.port = '8999'
-        return u.origin
+        // Keep path and query intact — the server's QR/share URL carries the
+        // auth token as ?token=..., which must survive normalization.
+        return u.href
       } catch {
         return null
       }
