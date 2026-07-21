@@ -2,7 +2,23 @@
   <div ref="barRef" id="mobile-kb" v-show="visible">
     <!-- Default mode: suggestion bar on top -->
     <div class="mkb-kb-bar" v-show="kbMode === 'default'">
+      <div v-if="cnMode && pinyinBuffer" class="mkb-pinyin-bar">
+        <span class="mkb-pinyin-buffer">{{ pinyinBuffer }}</span>
+        <div class="mkb-pinyin-cands">
+          <button
+            v-for="(c, i) in pinyinCandidates"
+            :key="c + i"
+            type="button"
+            class="mkb-pinyin-cand"
+            @mousedown.prevent="commitCandidate(c)"
+            @touchstart.prevent="commitCandidate(c)"
+          >
+            {{ c }}
+          </button>
+        </div>
+      </div>
       <SuggestionBar
+        v-else
         :suggestions="suggestions"
         @select="onSuggestionSelect"
         @edit="onSuggestionEdit"
@@ -311,6 +327,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import MkbRow from './MkbRow.vue'
+import { ensureDictLoaded, queryCandidates } from '../../utils/pinyinIme'
 import MkbKey from './MkbKey.vue'
 import SuggestionBar from './SuggestionBar.vue'
 import HistoryPanel from './HistoryPanel.vue'
@@ -377,9 +394,12 @@ const textInput = ref('')
 const textInputFocused = ref(false)
 const kbMode = ref<'default' | 'action'>('action')
 const inputBuffer = ref('')
-// Set by the QWERTY 中/英 key: after the text-input send, drop the system
-// IME and return to the QWERTY page instead of staying in action mode.
-const cnReturnToDefault = ref(false)
+// 中文 (pinyin) input mode on the built-in QWERTY page: letters type into a
+// pinyin buffer and candidates from the embedded dictionary are committed to
+// the terminal directly — no system IME involved.
+const cnMode = ref(false)
+const pinyinBuffer = ref('')
+const pinyinCandidates = ref<string[]>([])
 let blurTimer: ReturnType<typeof setTimeout> | null = null
 
 // Auto-focus the text input when the keyboard opens in action mode, so the
@@ -644,14 +664,14 @@ const arrowDown: KeyDef = { l: '↓', s: '\x1b[B', repeat: true, cls: 'mkb-arrow
 const arrowLeft: KeyDef = { l: '←', s: '\x1b[D', repeat: true, cls: 'mkb-arrow' }
 const arrowRight: KeyDef = { l: '→', s: '\x1b[C', repeat: true, cls: 'mkb-arrow' }
 
-const row5bottom: KeyDef[] = [
+const row5bottom = computed<KeyDef[]>(() => [
   { l: 'fn', sp: 'fn', g: 1.05, cls: 'mkb-mod' },
   { l: 'ctrl', sp: 'ctrl', g: 1.05, cls: 'mkb-mod', id: 'mkb-ctrl' },
   { l: 'opt', sp: 'alt', g: 1.05, cls: 'mkb-mod', id: 'mkb-alt' },
   { l: '⌘', sp: 'cmd', g: 1.05, cls: 'mkb-mod' },
   { l: '', s: ' ', g: 6.7, id: 'mkb-space' },
-  { l: '中', sp: 'cn', g: 1.3, cls: 'mkb-mod', id: 'mkb-cn' },
-]
+  { l: cnMode.value ? '英' : '中', sp: 'cn', g: 1.3, cls: 'mkb-mod', id: 'mkb-cn' },
+])
 
 const kbswitchAction = computed<KeyDef>(() => ({
   l: '',
@@ -729,22 +749,51 @@ function sendTextInput() {
   if (!text) return
   props.getSendFn()?.(text + '\r')
   textInput.value = ''
-  if (cnReturnToDefault.value) {
-    // Entered via the 中/英 key: drop the system IME and return to the
-    // QWERTY page after the text is sent.
-    cnReturnToDefault.value = false
-    textInputRef.value?.blur()
-    swipeTransition.value = true
-    kbMode.value = 'default'
-    fetchSuggestions()
-    nextTick(applyHeight)
-    return
-  }
   textInputRef.value?.focus()
   nextTick(resizeTextInput)
 }
 
+function updatePinyinCandidates() {
+  pinyinCandidates.value = pinyinBuffer.value ? queryCandidates(pinyinBuffer.value, 40) : []
+}
+
+function commitCandidate(text: string) {
+  props.getSendFn()?.(text)
+  clearPinyin()
+}
+
+function clearPinyin() {
+  pinyinBuffer.value = ''
+  pinyinCandidates.value = []
+}
+
 function onKeyPress(ch: string) {
+  // Embedded pinyin mode intercepts plain typing on the QWERTY page.
+  if (cnMode.value && kbMode.value === 'default' && !modState.ctrl && !modState.alt) {
+    if (/^[a-zA-Z]$/.test(ch)) {
+      pinyinBuffer.value += ch.toLowerCase()
+      updatePinyinCandidates()
+      return
+    }
+    if (pinyinBuffer.value) {
+      if (ch === '\x7f') {
+        pinyinBuffer.value = pinyinBuffer.value.slice(0, -1)
+        updatePinyinCandidates()
+        return
+      }
+      if (ch === ' ') {
+        commitCandidate(pinyinCandidates.value[0] ?? pinyinBuffer.value)
+        return
+      }
+      if (ch === '\r') {
+        props.getSendFn()?.(pinyinBuffer.value)
+        clearPinyin()
+        return
+      }
+      // Any other key aborts the composition before falling through.
+      clearPinyin()
+    }
+  }
   let data = ch
   if (data.length !== 1) {
     if (data === '\r' || data === '\n') inputBuffer.value = ''
@@ -796,16 +845,10 @@ function onSpecial(sp: string) {
     nextTick(applyHeight)
   }
   if (sp === 'cn') {
-    // 中/英 key on the QWERTY page: hop to the text-input bar so the system
-    // IME (with full Chinese support) takes over; sendTextInput returns to
-    // the QWERTY afterwards.
-    cnReturnToDefault.value = true
-    swipeTransition.value = true
-    kbMode.value = 'action'
-    nextTick(() => {
-      applyHeight()
-      textInputRef.value?.focus()
-    })
+    // 中/英 key on the QWERTY page: toggle the embedded pinyin input mode.
+    cnMode.value = !cnMode.value
+    if (cnMode.value) void ensureDictLoaded()
+    clearPinyin()
   }
   if (sp === 'bookmarks') {
     emit('bookmarks')
@@ -1156,5 +1199,49 @@ onBeforeUnmount(() => {
   border-radius: inherit;
   background: #4da3ff;
   transition: width 0.16s ease;
+}
+
+.mkb-pinyin-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.mkb-pinyin-buffer {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #4da3ff;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.mkb-pinyin-cands {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mkb-pinyin-cands::-webkit-scrollbar {
+  display: none;
+}
+
+.mkb-pinyin-cand {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-size: 16px;
+  padding: 4px 10px;
+}
+
+.mkb-pinyin-cand:active {
+  background: rgba(77, 163, 255, 0.35);
 }
 </style>
