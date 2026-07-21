@@ -45,14 +45,6 @@
       color: #fff;
     }
     .btn:active { opacity: 0.85; }
-    .ghost {
-      background: transparent;
-      color: #8a8a94;
-      font-weight: 400;
-      font-size: 13px;
-      margin-top: 6px;
-      display: none;
-    }
     .list { margin-top: 22px; }
     .list-title { font-size: 12px; color: #6c6c76; margin-bottom: 8px; }
     .server {
@@ -93,7 +85,6 @@
     <input id="server" type="url" inputmode="url" autocapitalize="off" autocorrect="off"
            spellcheck="false" placeholder="http://100.86.95.56:8999" />
     <button class="btn" id="connect">连接</button>
-    <button class="btn ghost" id="cancelAuto">取消自动连接</button>
     <div class="err" id="err"></div>
     <div class="list" id="listWrap" style="display:none">
       <div class="list-title">已保存的服务器（点击切换）</div>
@@ -101,7 +92,7 @@
     </div>
     <div class="hint">
       局域网填 192.168.x.x，跨网络填 Tailscale 的 100.x.x.x 地址（两端登录同一
-      Tailscale 账号）。最近使用的服务器会自动连接，可在倒计时内取消以切换。
+      Tailscale 账号）。连接后按安卓返回键（或重开 App）可回到此页切换服务器。
     </div>
   </div>
   <script>
@@ -109,10 +100,8 @@
     const LIST_KEY = 'dinotty_servers'
     const input = document.getElementById('server')
     const err = document.getElementById('err')
-    const cancelBtn = document.getElementById('cancelAuto')
     const listWrap = document.getElementById('listWrap')
     const listEl = document.getElementById('list')
-    let autoTimer = null
 
     function loadServers() {
       try {
@@ -154,15 +143,9 @@
       // UI always matches the server version.
       const u = new URL(url)
       u.searchParams.set('_r', Date.now().toString(36))
-      location.replace(u.href)
-    }
-
-    function cancelAuto() {
-      if (autoTimer) {
-        clearTimeout(autoTimer)
-        autoTimer = null
-      }
-      cancelBtn.style.display = 'none'
+      // location.href (not replace) keeps this page in history so the
+      // Android back button returns here to switch servers.
+      location.href = u.href
     }
 
     function shortLabel(url) {
@@ -185,12 +168,11 @@
         const addr = document.createElement('div')
         addr.className = 'addr'
         addr.textContent = shortLabel(s)
-        addr.addEventListener('click', () => { cancelAuto(); go(s) })
+        addr.addEventListener('click', () => go(s))
         const del = document.createElement('button')
         del.className = 'del'
         del.textContent = '✕'
         del.addEventListener('click', () => {
-          cancelAuto()
           saveServers(loadServers().filter((x) => x !== s))
           renderList()
         })
@@ -207,7 +189,6 @@
         err.style.display = 'block'
         return
       }
-      cancelAuto()
       go(url)
     })
 
@@ -215,10 +196,6 @@
     const saved = localStorage.getItem(LAST_KEY)
     if (saved) {
       input.value = saved
-      cancelBtn.style.display = 'block'
-      autoTimer = setTimeout(() => go(saved), 2500)
-      cancelBtn.addEventListener('click', cancelAuto)
-      input.addEventListener('input', cancelAuto)
     }
   </script>
 </body>
