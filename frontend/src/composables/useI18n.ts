@@ -204,6 +204,9 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.accessUrl': 'Access URL',
     'settings.accessUrlHint':
       'Use this URL to access the terminal from other devices on the same network',
+    'settings.tailscaleUrl': 'Tailscale Remote URL',
+    'settings.tailscaleUrlHint':
+      'Use this URL to access the terminal from anywhere on devices signed in to your Tailscale network',
     'settings.copyUrl': 'Copy URL',
     'settings.refreshQrCode': 'Refresh QR code',
     'settings.uploads.defaultDir': 'Default workspace directory',
@@ -313,6 +316,9 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.tab.monitor': 'Monitor',
     'settings.keyboard.feedback': 'Key Feedback',
     'settings.keyboard.sound': 'Click sound on key press',
+    'settings.keyboard.keepOnScroll': 'Keep keyboard open while scrolling',
+    'settings.keyboard.keepOnScrollHint':
+      'Scroll back through history without dismissing the keyboard',
     'settings.keyboard.openApi': 'Open API',
     'settings.keyboard.openApiHint':
       'Allow external devices to send input to the terminal via HTTP API.',
@@ -458,7 +464,8 @@ const messages: Record<Locale, Record<string, string>> = {
     'keybinding.switchTab': 'Switch to Tab (⌘1~9)',
     'keybinding.missionControl': 'Mission Control',
     'keybinding.superviseTabs': 'Supervise Tabs',
-    'keybinding.superviseTabsHint': 'On Windows, press Alt+` (with Alt-as-Cmd) — Ctrl+` also matches.',
+    'keybinding.superviseTabsHint':
+      'On Windows, press Alt+` (with Alt-as-Cmd) — Ctrl+` also matches.',
     'keybinding.sshConnect': 'SSH Connection',
     'keybinding.fontSizeUp': 'Increase Font Size',
     'keybinding.fontSizeDown': 'Decrease Font Size',
@@ -841,6 +848,8 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.text.fontCurrentRow': '当前',
     'settings.accessUrl': '访问地址',
     'settings.accessUrlHint': '使用此 URL 从同一网络的其他设备访问终端',
+    'settings.tailscaleUrl': 'Tailscale 远程地址',
+    'settings.tailscaleUrlHint': '设备登录同一 Tailscale 账号后，可从任意网络使用此 URL 访问终端',
     'settings.copyUrl': '复制 URL',
     'settings.refreshQrCode': '刷新二维码',
     'settings.uploads.defaultDir': '默认工作区目录',
@@ -928,7 +937,8 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.virtualKeyboard.hint': '在右下角显示虚拟键盘悬浮按钮，方便快速呼出虚拟键盘',
     'settings.workspaceBadge': 'Tab 工作区标识',
     'settings.workspaceBadge.show': '在 Tab 上显示工作区标识',
-    'settings.workspaceBadge.hint': '在每个 Tab 上显示色点和工作区缩写，便于识别所属工作区。默认：手机竖屏端开启，桌面端关闭。',
+    'settings.workspaceBadge.hint':
+      '在每个 Tab 上显示色点和工作区缩写，便于识别所属工作区。默认：手机竖屏端开启，桌面端关闭。',
     'settings.monitor.cpu': 'CPU',
     'settings.monitor.memory': '内存',
     'settings.monitor.disk': '磁盘',
@@ -943,6 +953,8 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.tab.monitor': '监控',
     'settings.keyboard.feedback': '按键反馈',
     'settings.keyboard.sound': '按键音效',
+    'settings.keyboard.keepOnScroll': '滚动时保持键盘',
+    'settings.keyboard.keepOnScrollHint': '上翻查看历史输出时不再收起键盘',
     'settings.keyboard.openApi': '开放接口',
     'settings.keyboard.openApiHint': '允许外部设备通过 HTTP API 向终端发送输入。',
     'settings.keyboard.openApiEnabled': '启用开放接口',

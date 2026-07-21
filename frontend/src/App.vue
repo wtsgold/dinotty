@@ -1319,7 +1319,7 @@ function onTerminalTouch(e: TouchEvent) {
     // Don't show keyboard when a scroll gesture was just detected
     if (scrollGestureDetected) {
       scrollGestureDetected = false
-      if (kbVisible.value) kbVisible.value = false
+      if (kbVisible.value && !appSettings.keyboard_keep_on_scroll) kbVisible.value = false
       return
     }
     const tab = tabs.value.find((t) => t.paneId === activePaneId.value)
@@ -1327,7 +1327,7 @@ function onTerminalTouch(e: TouchEvent) {
     const term = paneId ? termRefs[paneId]?.getTerminal() : null
     if (term && term.touchMoved) {
       term.touchMoved = false
-      if (kbVisible.value) kbVisible.value = false
+      if (kbVisible.value && !appSettings.keyboard_keep_on_scroll) kbVisible.value = false
       return
     }
     kbVisible.value = true
@@ -1338,6 +1338,9 @@ function onTerminalScroll() {
   scrollGestureDetected = true
   clearTimeout(scrollGestureTimer)
   scrollGestureTimer = window.setTimeout(() => { scrollGestureDetected = false }, 300)
+  // With keep-on-scroll enabled, scrolling back through history must not
+  // dismiss the keyboard the user is typing on.
+  if (appSettings.keyboard_keep_on_scroll) return
   if (kbVisible.value) kbVisible.value = false
 }
 
