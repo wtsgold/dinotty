@@ -215,9 +215,11 @@ export class TauriIpcTransport implements Transport {
     } else if (msg.type === 'resize') {
       this._invoke('pty_resize', { cols: msg.cols, rows: msg.rows }).catch(() => {})
     } else if (msg.type === 'snapshot_request') {
-      this._invoke('pty_snapshot_request', { cols: msg.cols, rows: msg.rows }).catch((err: unknown) => {
-        console.error('pty_snapshot_request failed:', err)
-      })
+      this._invoke('pty_snapshot_request', { cols: msg.cols, rows: msg.rows }).catch(
+        (err: unknown) => {
+          console.error('pty_snapshot_request failed:', err)
+        }
+      )
     }
   }
 
