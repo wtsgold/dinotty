@@ -377,6 +377,9 @@ const textInput = ref('')
 const textInputFocused = ref(false)
 const kbMode = ref<'default' | 'action'>('action')
 const inputBuffer = ref('')
+// Set by the QWERTY 中/英 key: after the text-input send, drop the system
+// IME and return to the QWERTY page instead of staying in action mode.
+const cnReturnToDefault = ref(false)
 let blurTimer: ReturnType<typeof setTimeout> | null = null
 
 // Auto-focus the text input when the keyboard opens in action mode, so the
@@ -646,7 +649,8 @@ const row5bottom: KeyDef[] = [
   { l: 'ctrl', sp: 'ctrl', g: 1.05, cls: 'mkb-mod', id: 'mkb-ctrl' },
   { l: 'opt', sp: 'alt', g: 1.05, cls: 'mkb-mod', id: 'mkb-alt' },
   { l: '⌘', sp: 'cmd', g: 1.05, cls: 'mkb-mod' },
-  { l: '', s: ' ', g: 8, id: 'mkb-space' },
+  { l: '', s: ' ', g: 6.7, id: 'mkb-space' },
+  { l: '中', sp: 'cn', g: 1.3, cls: 'mkb-mod', id: 'mkb-cn' },
 ]
 
 const kbswitchAction = computed<KeyDef>(() => ({
@@ -725,6 +729,17 @@ function sendTextInput() {
   if (!text) return
   props.getSendFn()?.(text + '\r')
   textInput.value = ''
+  if (cnReturnToDefault.value) {
+    // Entered via the 中/英 key: drop the system IME and return to the
+    // QWERTY page after the text is sent.
+    cnReturnToDefault.value = false
+    textInputRef.value?.blur()
+    swipeTransition.value = true
+    kbMode.value = 'default'
+    fetchSuggestions()
+    nextTick(applyHeight)
+    return
+  }
   textInputRef.value?.focus()
   nextTick(resizeTextInput)
 }
@@ -779,6 +794,18 @@ function onSpecial(sp: string) {
     kbMode.value = kbMode.value === 'action' ? 'default' : 'action'
     if (kbMode.value === 'default') fetchSuggestions()
     nextTick(applyHeight)
+  }
+  if (sp === 'cn') {
+    // 中/英 key on the QWERTY page: hop to the text-input bar so the system
+    // IME (with full Chinese support) takes over; sendTextInput returns to
+    // the QWERTY afterwards.
+    cnReturnToDefault.value = true
+    swipeTransition.value = true
+    kbMode.value = 'action'
+    nextTick(() => {
+      applyHeight()
+      textInputRef.value?.focus()
+    })
   }
   if (sp === 'bookmarks') {
     emit('bookmarks')
